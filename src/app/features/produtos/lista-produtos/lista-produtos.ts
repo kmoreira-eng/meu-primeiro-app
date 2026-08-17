@@ -1,33 +1,43 @@
- import { Component, signal, computed, effect } from '@angular/core';
+import { Component, signal, computed, effect, inject } from '@angular/core';
+ import { MatButtonModule } from '@angular/material/button';
+ import { ProdutosService } from '../../../core/services/produtos.service';
+import { CarrinhoService } from '../../../core/services/carrinho.service';
 
+
+ 
 import { Produto } from '../produto/produto';
 
 @Component({
   selector: 'app-lista-produtos',
-  imports: [Produto],
+  imports: [Produto,MatButtonModule],
   templateUrl: './lista-produtos.html',
   styleUrl: './lista-produtos.css',
 })
 export class ListaProdutos {
   
+   private produtosService = inject(ProdutosService);
+   carrinhoService = inject(CarrinhoService);
 
+
+   quantidadeCarrinho = this.carrinhoService.quantidade;
+    totalCarrinho = this.carrinhoService.total;
     //========================================
     //                   SIGNALS     
     //=============================================
   //Writesignal -> signal (reativo) que permite alterações (com set ou update)
-  produtos = signal([
-    // mande um sinal (ele atualiza quando um vetor muda ou algo assim)
-    { nome: 'Notebook', preco: 3800 },
-    { nome: 'Mouse', preco: 179 },
-    { nome: 'Caixa de Som', preco: 199.99 },
-    { nome: 'Fone De Ouvido', preco: 80 },
-  ]);
+  produtos = signal<{ nome: string; preco: number }[]>([]); //add hj (13.08.26) papai, Aprendndo API
+  
+  
 
 
-   produtoSelecionado = signal<string | null>(null);
+  carregando = signal(true);
+
+  produtoSelecionado = signal<string | null>(null);
    
    // o começo de uma nova era (Carrinho de compras)
-  carrinho = signal<{ nome: string; preco: number }[]>([]);
+  
+
+  erro = signal<string | null>(null); // Add hj (14.08.26)
  
 
   //computed 
@@ -38,37 +48,61 @@ export class ListaProdutos {
   }); // essa linha faz a soma dos produtos.  
 
  
-  quantidadeCarrinho = computed(() => this.carrinho().length); 
+ 
 
-  totalCarrinho = computed(() => {
-    return this.carrinho().reduce((total, item) => total + item.preco, 0);
-  });
-  
+
 
   
-  constructor() { //formada os objetos criados a partir dessa classe
+   constructor() {
 
-     //estes effects geram mensagens no terminal sempre que alterações são realizadas.
+    // carrega da API
+    this.carregarProdutos();
 
-    effect(() => {// effect observa alterações realizadas no sinal que é o vetor de produtos
+    // effects continuam iguais
+    effect(() => {
       console.log('Lista de produtos alterada:', this.produtos());
     });
 
-    
-    effect(() => {// effetct observa alterações do computed sinal(valorTotal)  
+    effect(() => {
       console.log('Valor total atualizado:', this.valorTotal());
-    });   
-
-     effect(() => {
+    });
+    effect(() => {
       if (typeof document !== 'undefined') {
         document.title = `(${this.totalProdutos()}) Minha Loja`;
-      }// effect observa o title da pagina e altera se a condição for atendida
+      }
     });
-    
+  } // fim do constructor
 
-    
- 
-  }// fim do constructor
+
+
+  carregarProdutos() {
+
+    this.erro.set(null); // limpa erro anterior
+
+    this.carregando.set(true);
+
+    this.produtosService.buscarProdutos().subscribe({
+      next: (dados) => {
+        const produtos = this.produtosService.transformarProdutos(dados);
+        this.produtos.set(produtos);
+        this.carregando.set(false);
+      },
+      error: (erro) => {
+        console.error('Erro ao carregar produtos:', erro);
+         this.erro.set('Erro ao carregar produtos. Verifique sua conexão e tente novamente.');
+        this.carregando.set(false);
+      },
+    });
+  }
+
+
+
+
+
+
+
+
+
 
   exibirProduto(nome: string) {
     this.produtoSelecionado.set(nome); // Aqui você pode atualizar o estado, abrir modal, etc.
@@ -88,10 +122,16 @@ export class ListaProdutos {
   substituirProdutos() {
     this.produtos.set([{ nome: 'Produto novo', preco: 0 }]);
   } 
-  
+   
   adicionarAoCarrinho(produto: { nome: string; preco: number }) {
-    this.carrinho.update((listaAtual) => [...listaAtual, produto]);
-  }
+      this.carrinhoService.adicionar(produto);
+    }
+   ;
+  
+
+
+
+}
 
   
   

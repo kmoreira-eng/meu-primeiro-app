@@ -1,5 +1,5 @@
- import { authGuard } from './core/auth.guard';
-  import { Routes } from '@angular/router';
+ import { Routes } from '@angular/router';
+  import { authGuard } from './core/auth.guard';
   export const routes: Routes = [
     {
       path: '',
@@ -7,16 +7,16 @@
     },
     {
       path: 'produtos',
-       canActivate: [authGuard],
       loadComponent: () =>
         import('./features/produtos/lista-produtos/lista-produtos').then((m) => m.ListaProdutos),
     },
-    {
+   {
       path: 'carrinho',
+      canActivate: [authGuard], // esse mano é o mestre mandou
       loadComponent: () => import('./features/carrinho/carrinho/carrinho').then((m) => m.Carrinho),
     },
     {
       path: '**',
-      redirectTo: '',
+      redirectTo: '', // redireciona para a página inicial
     },
   ];

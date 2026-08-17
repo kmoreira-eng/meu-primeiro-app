@@ -2,5 +2,9 @@
 
   body{
     background-color: rgb(109, 158, 109);
+    color: rgb(2, 152, 4);
+  }
+
+  h2{
     color: white;
   }
